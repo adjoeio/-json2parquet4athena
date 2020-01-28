@@ -35,6 +35,7 @@ class DataFrameSchemaNormalizer(jobName: String = "work_done",
                               curExecIdx: Int = 0)
 
   val STRUCT_SEP = "___"
+  val S3_PROTOCOL = "s3a"
 
   /*******************
     * This function normalizes a dataframe.
@@ -62,17 +63,17 @@ class DataFrameSchemaNormalizer(jobName: String = "work_done",
         exploded.write
           .mode("overwrite")
           .parquet(
-            s"s3a://$s3Bucket/$TEMPORARY_WORKING_FOLDER/NORMALIZE_SCHEMA/1_UNFOLDED/$uuid")
+            s"$S3_PROTOCOL://$s3Bucket/$TEMPORARY_WORKING_FOLDER/NORMALIZE_SCHEMA/1_UNFOLDED/$uuid")
         val exploded_loaded = spark.read.parquet(
-          s"s3a://$s3Bucket/$TEMPORARY_WORKING_FOLDER/NORMALIZE_SCHEMA/1_UNFOLDED/$uuid")
+          s"$S3_PROTOCOL://$s3Bucket/$TEMPORARY_WORKING_FOLDER/NORMALIZE_SCHEMA/1_UNFOLDED/$uuid")
 
         val normalized = makeLowercaseAndUnify(exploded_loaded).distinct()
         normalized.write
           .mode("overwrite")
           .parquet(
-            s"s3a://$s3Bucket/$TEMPORARY_WORKING_FOLDER/NORMALIZE_SCHEMA/2_LOWERCASED_MERGED_SORTED_COL/$uuid")
+            s"$S3_PROTOCOL://$s3Bucket/$TEMPORARY_WORKING_FOLDER/NORMALIZE_SCHEMA/2_LOWERCASED_MERGED_SORTED_COL/$uuid")
         val normalized_loaded = spark.read.parquet(
-          s"s3a://$s3Bucket/$TEMPORARY_WORKING_FOLDER/NORMALIZE_SCHEMA/2_LOWERCASED_MERGED_SORTED_COL/$uuid")
+          s"$S3_PROTOCOL://$s3Bucket/$TEMPORARY_WORKING_FOLDER/NORMALIZE_SCHEMA/2_LOWERCASED_MERGED_SORTED_COL/$uuid")
 
         val imploded = (1 to Math.min(nestedDepth, maxNestingDepth)).foldLeft(normalized_loaded) {
           (acc, idx) =>
@@ -82,9 +83,9 @@ class DataFrameSchemaNormalizer(jobName: String = "work_done",
         deleteComments(imploded).write
           .mode("overwrite")
           .parquet(
-            s"s3a://$s3Bucket/$TEMPORARY_WORKING_FOLDER/NORMALIZE_SCHEMA/3_FOLDED/$uuid")
+            s"$S3_PROTOCOL://$s3Bucket/$TEMPORARY_WORKING_FOLDER/NORMALIZE_SCHEMA/3_FOLDED/$uuid")
         val imploded_loaded = spark.read.parquet(
-          s"s3a://$s3Bucket/$TEMPORARY_WORKING_FOLDER/NORMALIZE_SCHEMA/3_FOLDED/$uuid")
+          s"$S3_PROTOCOL://$s3Bucket/$TEMPORARY_WORKING_FOLDER/NORMALIZE_SCHEMA/3_FOLDED/$uuid")
 
         imploded_loaded
       case _ => df
@@ -119,10 +120,10 @@ class DataFrameSchemaNormalizer(jobName: String = "work_done",
     schemaPreservingTuple_3.write
       .mode("overwrite")
       .parquet(
-        s"s3a://$s3Bucket/$TEMPORARY_WORKING_FOLDER/NORMALIZE_SCHEMA_PRESERVING_TUPLE/1_UNFOLDED/$uuid")
+        s"$S3_PROTOCOL://$s3Bucket/$TEMPORARY_WORKING_FOLDER/NORMALIZE_SCHEMA_PRESERVING_TUPLE/1_UNFOLDED/$uuid")
 
     val schemaPreservingTuple_loaded = spark.read.parquet(
-      s"s3a://$s3Bucket/$TEMPORARY_WORKING_FOLDER/NORMALIZE_SCHEMA_PRESERVING_TUPLE/1_UNFOLDED/$uuid")
+      s"$S3_PROTOCOL://$s3Bucket/$TEMPORARY_WORKING_FOLDER/NORMALIZE_SCHEMA_PRESERVING_TUPLE/1_UNFOLDED/$uuid")
 
     val schemaPreservingTuple_normalized = makeLowercaseAndUnify(
       schemaPreservingTuple_loaded)
@@ -130,10 +131,10 @@ class DataFrameSchemaNormalizer(jobName: String = "work_done",
     schemaPreservingTuple_normalized.write
       .mode("overwrite")
       .parquet(
-        s"s3a://$s3Bucket/$TEMPORARY_WORKING_FOLDER/NORMALIZE_SCHEMA_PRESERVING_TUPLE/2_LOWERCASED_MERGED_SORTED_COL/$uuid")
+        s"$S3_PROTOCOL://$s3Bucket/$TEMPORARY_WORKING_FOLDER/NORMALIZE_SCHEMA_PRESERVING_TUPLE/2_LOWERCASED_MERGED_SORTED_COL/$uuid")
 
     val schemaPreservingTuple_normalized_loaded = spark.read.parquet(
-      s"s3a://$s3Bucket/$TEMPORARY_WORKING_FOLDER/NORMALIZE_SCHEMA_PRESERVING_TUPLE/2_LOWERCASED_MERGED_SORTED_COL/$uuid")
+      s"$S3_PROTOCOL://$s3Bucket/$TEMPORARY_WORKING_FOLDER/NORMALIZE_SCHEMA_PRESERVING_TUPLE/2_LOWERCASED_MERGED_SORTED_COL/$uuid")
 
     val schemaPreservingTuple_imploded =
       (1 to maxNestingDepth).foldLeft(schemaPreservingTuple_normalized_loaded) {
@@ -144,9 +145,9 @@ class DataFrameSchemaNormalizer(jobName: String = "work_done",
     deleteComments(schemaPreservingTuple_imploded).write
       .mode("overwrite")
       .parquet(
-        s"s3a://$s3Bucket/$TEMPORARY_WORKING_FOLDER/NORMALIZE_SCHEMA_PRESERVING_TUPLE/3_FOLDED/$uuid")
+        s"$S3_PROTOCOL://$s3Bucket/$TEMPORARY_WORKING_FOLDER/NORMALIZE_SCHEMA_PRESERVING_TUPLE/3_FOLDED/$uuid")
     val schemaPreservingTuple_imploded_loaded = spark.read.parquet(
-      s"s3a://$s3Bucket/$TEMPORARY_WORKING_FOLDER/NORMALIZE_SCHEMA_PRESERVING_TUPLE/3_FOLDED/$uuid")
+      s"$S3_PROTOCOL://$s3Bucket/$TEMPORARY_WORKING_FOLDER/NORMALIZE_SCHEMA_PRESERVING_TUPLE/3_FOLDED/$uuid")
 
     schemaPreservingTuple_imploded_loaded
   }
@@ -316,7 +317,7 @@ class DataFrameSchemaNormalizer(jobName: String = "work_done",
             case _ =>
               acc.schema(column.name).getComment match {
                 case None =>
-                  logger.debug(
+                  logger.info(
                     s"Atomar array col ${column.name} has NO comment.")
                   val arrayElementType = acc
                     .schema(column.name)
@@ -349,7 +350,7 @@ class DataFrameSchemaNormalizer(jobName: String = "work_done",
 
                 case Some(com) =>
                   val oldComment = com
-                  logger.debug(s"Atomar array ${column.name} has comment: $com")
+                  logger.info(s"Atomar array ${column.name} has comment: $com")
 
                   val arrayElementType = acc
                     .schema(column.name)
@@ -401,11 +402,11 @@ class DataFrameSchemaNormalizer(jobName: String = "work_done",
                             col(structColumn.name)(column.name))
           val oldComment = tmpDF.schema(structColumn.name).getComment match {
             case None =>
-              logger.debug(s"struct col ${structColumn.name} has NO comment.")
+              logger.info(s"struct col ${structColumn.name} has NO comment.")
               ""
 
             case Some(com) =>
-              logger.debug(s"struct col ${structColumn.name} has comment: $com")
+              logger.info(s"struct col ${structColumn.name} has comment: $com")
               com + ","
 
           }
@@ -422,7 +423,8 @@ class DataFrameSchemaNormalizer(jobName: String = "work_done",
       .drop(structColumns.map(_.name): _*)
 
     dfUnfoldedColumns.createOrReplaceTempView("dfUnfoldedColumns")
-    logger.debug("result of unnest function application:")
+    logger.info("result of unnest function application:")
+    spark.sql("describe dfUnfoldedColumns").show(200, false)
     logger.isDebugEnabled match {
       case true =>
         spark.sql("describe dfUnfoldedColumns").show(200, false)
@@ -480,7 +482,8 @@ class DataFrameSchemaNormalizer(jobName: String = "work_done",
     }
     merged.createOrReplaceTempView("merged")
 
-    logger.debug("result of lowercase-and-merge function application:")
+    logger.info("result of lowercase-and-merge function application:")
+    spark.sql("describe merged").show(200, false)
     logger.isDebugEnabled match {
       case true =>
         spark.sql("describe merged").show(200, false)
@@ -520,10 +523,18 @@ class DataFrameSchemaNormalizer(jobName: String = "work_done",
     val result = collapses.foldLeft(df) { (acc, x) =>
       val releventColSegments = x._1
       val relComment = x._2.mkString(",")
+
+      logger.info(s"releventColSegments: $releventColSegments")
+      logger.info(s"relComment: $relComment")
+
       releventColSegments(0).endsWith("_exploded") match {
+
         case false => //this is a struct
           val currentColNamePrefix =
             releventColSegments.reverse.mkString(STRUCT_SEP)
+
+          logger.info("columns: " + acc.columns.mkString(", "))
+          logger.info("currentColNamePrefix: " + currentColNamePrefix)
 
           val selectedColsForStruct =
             acc.columns.filter(_.startsWith(currentColNamePrefix)).sorted.map {
@@ -531,7 +542,7 @@ class DataFrameSchemaNormalizer(jobName: String = "work_done",
                 col(y) as y.replaceFirst(currentColNamePrefix + STRUCT_SEP, "")
             }
 
-          logger.debug(
+          logger.info(
             "IMPLODE: " + currentColNamePrefix + "->" + selectedColsForStruct
               .mkString(", "))
 
@@ -548,14 +559,23 @@ class DataFrameSchemaNormalizer(jobName: String = "work_done",
             )
           setComment(newAcc, currentColNamePrefix, relComment)
 
+
         case _ => //this is an array
           val currentColNamePrefix =
             releventColSegments.reverse.mkString(STRUCT_SEP)
+
+          logger.info("columns: " + acc.columns.mkString(", "))
+          logger.info("currentColNamePrefix: " + currentColNamePrefix)
+
           val selectedColsForStruct =
             acc.columns.filter(_.startsWith(currentColNamePrefix)).sorted.map {
               y =>
                 col(y) as y.replaceFirst(currentColNamePrefix + STRUCT_SEP, "")
             }
+
+          logger.info(
+            "IMPLODE: " + currentColNamePrefix + "->" + selectedColsForStruct
+              .mkString(", "))
 
           val isEmptyArray = acc.columns
             .filter(_.startsWith(currentColNamePrefix))
@@ -581,11 +601,18 @@ class DataFrameSchemaNormalizer(jobName: String = "work_done",
                 )
                 .agg(
                   collect_list(selectedColsForStruct.head) as currentColNamePrefix
-                    .replaceFirst("_exploded", ""))
+                    .reverse//following lines are the same as replace last "_exploded"
+                    .replaceFirst("dedolpxe_", "")
+                    .reverse
+                )//.replaceFirst("_exploded", ""))
+
                 .drop(toDrop)
 
               setComment(newAcc,
-                         currentColNamePrefix.replaceFirst("_exploded", ""),
+                         currentColNamePrefix
+                           .reverse//following lines are the same as replace last "_exploded"
+                           .replaceFirst("dedolpxe_", "")
+                           .reverse,
                          relComment)
 
             case _ =>
@@ -614,22 +641,30 @@ class DataFrameSchemaNormalizer(jobName: String = "work_done",
                 .agg(
                   collect_list(
                     when(!col("isEmptyArray"), col(currentColNamePrefix)) //if all columns are null, do not gather the values
-                  ) as currentColNamePrefix.replaceFirst("_exploded", "")
+                  ) as currentColNamePrefix
+                    .reverse//following lines are the same as replace last "_exploded"
+                    .replaceFirst("dedolpxe_", "")
+                    .reverse
                 )
                 .drop(currentColNamePrefix)
                 .drop("isEmptyArray")
 
               setComment(newAcc,
-                         currentColNamePrefix.replaceFirst("_exploded", ""),
+                         currentColNamePrefix
+                           .reverse//following lines are the same as replace last "_exploded"
+                           .replaceFirst("dedolpxe_", "")
+                           .reverse,
                          relComment)
           }
       }
     }
     //order also the most outer columns
-    logger.debug("result of nesting function application:")
+    result.createOrReplaceTempView("implodeddf")
+    logger.info("result of nesting function application:")
+    spark.sql("""describe implodeddf""").show(200, false)
     logger.isDebugEnabled match {
       case true =>
-        spark.sql("""describe impldoedf""").show(200, false)
+        spark.sql("""describe implodeddf""").show(200, false)
       case _ =>
     }
 
@@ -707,14 +742,16 @@ class DataFrameSchemaNormalizer(jobName: String = "work_done",
 
     val df1AttrCount = spark.sql("""DESCRIBE df1 """).drop("comment").count
 
-    logger.debug("old df schema:")
+    logger.info("old df schema:")
+    spark.sql("""DESCRIBE df1 """).show(200, false)
     logger.isDebugEnabled match {
       case true =>
         spark.sql("""DESCRIBE df1 """).show(200, false)
       case _ =>
     }
 
-    logger.debug("new df schema:")
+    logger.info("new df schema:")
+    spark.sql("""DESCRIBE df2 """).show(200, false)
     logger.isDebugEnabled match {
       case true =>
         spark.sql("""DESCRIBE df2 """).show(200, false)

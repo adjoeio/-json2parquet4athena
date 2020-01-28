@@ -63,7 +63,7 @@ lazy val commonSettings = Seq(
   ************************************************/
 
 val generalStepConfigClientMode = "--deploy-mode,client,--master,yarn,--conf,yarn.scheduler.capacity.maximum-am-resource-percent=0.95,--conf,spark.default.parallelism=100"
-val memoryParameters = "--conf,spark.driver.maxResultSize=1G,--conf,spark.executor.extraJavaOptions=-Xss1024m,--driver-java-options,-Xss1024m,--conf,spark.executor.memory=40g,--conf,spark.executor.memoryOverhead=15g,--conf,spark.driver.memory=5g,--conf,spark.driver.memoryOverhead=15g"
+val memoryParameters = "--conf,spark.driver.maxResultSize=1G,--conf,spark.executor.extraJavaOptions=-Xss1024m,--driver-java-options,-Xss1024m,--conf,spark.executor.memory=38g,--conf,spark.executor.memoryOverhead=15g,--conf,spark.driver.memory=5g,--conf,spark.driver.memoryOverhead=15g"
 val dataHandlingParameters = "--conf,spark.sql.caseSensitive=true,--conf,spark.sql.parquet.mergeSchema=false,--conf,spark.hadoop.fs.s3a.experimental.input.fadvise=normal,--conf,spark.hadoop.fs.s3a.fast.upload=true,--conf,spark.hadoop.fs.s3a.impl=org.apache.hadoop.fs.s3a.S3AFileSystem,--conf,spark.hadoop.mapreduce.fileoutputcommitter.algorithm.version=2,--conf,spark.sql.parquet.filterPushdown=true,--conf,spark.speculation=false,--conf,spark.sql.parquet.fs.optimized.committer.optimization-enabled=true"
 
 
