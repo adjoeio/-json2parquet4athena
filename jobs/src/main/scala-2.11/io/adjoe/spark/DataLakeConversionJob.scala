@@ -78,6 +78,8 @@ class DataLakeConversionJob(jobName: String = "work_done",
                 s"s3a://$s3Bucket/$TEMPORARY_WORKING_FOLDER$tableName/$part")
             unconvertedNew.printSchema
 
+            Thread.sleep(2000)
+
             spark.read
               .json(
                 s"s3a://$s3Bucket/$TEMPORARY_WORKING_FOLDER$tableName/$part")
@@ -213,6 +215,8 @@ class DataLakeConversionJob(jobName: String = "work_done",
                         .json(
                           s"s3a://$s3Bucket/$TEMPORARY_WORKING_FOLDER$tableName/$part")
                       unconvertedNew.printSchema
+
+                      Thread.sleep(2000)
 
                       spark.read
                         .json(

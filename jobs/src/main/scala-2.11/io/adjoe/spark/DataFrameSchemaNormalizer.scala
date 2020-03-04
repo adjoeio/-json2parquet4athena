@@ -64,6 +64,9 @@ class DataFrameSchemaNormalizer(jobName: String = "work_done",
           .mode("overwrite")
           .parquet(
             s"$S3_PROTOCOL://$s3Bucket/$TEMPORARY_WORKING_FOLDER/NORMALIZE_SCHEMA/1_UNFOLDED/$uuid")
+
+        Thread.sleep(2000)
+
         val exploded_loaded = spark.read.parquet(
           s"$S3_PROTOCOL://$s3Bucket/$TEMPORARY_WORKING_FOLDER/NORMALIZE_SCHEMA/1_UNFOLDED/$uuid")
 
@@ -72,6 +75,9 @@ class DataFrameSchemaNormalizer(jobName: String = "work_done",
           .mode("overwrite")
           .parquet(
             s"$S3_PROTOCOL://$s3Bucket/$TEMPORARY_WORKING_FOLDER/NORMALIZE_SCHEMA/2_LOWERCASED_MERGED_SORTED_COL/$uuid")
+
+        Thread.sleep(2000)
+
         val normalized_loaded = spark.read.parquet(
           s"$S3_PROTOCOL://$s3Bucket/$TEMPORARY_WORKING_FOLDER/NORMALIZE_SCHEMA/2_LOWERCASED_MERGED_SORTED_COL/$uuid")
 
@@ -84,6 +90,9 @@ class DataFrameSchemaNormalizer(jobName: String = "work_done",
           .mode("overwrite")
           .parquet(
             s"$S3_PROTOCOL://$s3Bucket/$TEMPORARY_WORKING_FOLDER/NORMALIZE_SCHEMA/3_FOLDED/$uuid")
+
+        Thread.sleep(2000)
+
         val imploded_loaded = spark.read.parquet(
           s"$S3_PROTOCOL://$s3Bucket/$TEMPORARY_WORKING_FOLDER/NORMALIZE_SCHEMA/3_FOLDED/$uuid")
 
@@ -122,6 +131,8 @@ class DataFrameSchemaNormalizer(jobName: String = "work_done",
       .parquet(
         s"$S3_PROTOCOL://$s3Bucket/$TEMPORARY_WORKING_FOLDER/NORMALIZE_SCHEMA_PRESERVING_TUPLE/1_UNFOLDED/$uuid")
 
+    Thread.sleep(2000)
+
     val schemaPreservingTuple_loaded = spark.read.parquet(
       s"$S3_PROTOCOL://$s3Bucket/$TEMPORARY_WORKING_FOLDER/NORMALIZE_SCHEMA_PRESERVING_TUPLE/1_UNFOLDED/$uuid")
 
@@ -132,6 +143,8 @@ class DataFrameSchemaNormalizer(jobName: String = "work_done",
       .mode("overwrite")
       .parquet(
         s"$S3_PROTOCOL://$s3Bucket/$TEMPORARY_WORKING_FOLDER/NORMALIZE_SCHEMA_PRESERVING_TUPLE/2_LOWERCASED_MERGED_SORTED_COL/$uuid")
+
+    Thread.sleep(2000)
 
     val schemaPreservingTuple_normalized_loaded = spark.read.parquet(
       s"$S3_PROTOCOL://$s3Bucket/$TEMPORARY_WORKING_FOLDER/NORMALIZE_SCHEMA_PRESERVING_TUPLE/2_LOWERCASED_MERGED_SORTED_COL/$uuid")
@@ -146,6 +159,9 @@ class DataFrameSchemaNormalizer(jobName: String = "work_done",
       .mode("overwrite")
       .parquet(
         s"$S3_PROTOCOL://$s3Bucket/$TEMPORARY_WORKING_FOLDER/NORMALIZE_SCHEMA_PRESERVING_TUPLE/3_FOLDED/$uuid")
+
+    Thread.sleep(2000)
+
     val schemaPreservingTuple_imploded_loaded = spark.read.parquet(
       s"$S3_PROTOCOL://$s3Bucket/$TEMPORARY_WORKING_FOLDER/NORMALIZE_SCHEMA_PRESERVING_TUPLE/3_FOLDED/$uuid")
 
