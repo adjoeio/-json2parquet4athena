@@ -9,7 +9,8 @@ import org.apache.spark.sql.functions.{
   explode_outer,
   lit,
   struct,
-  when
+  when,
+  udf
 }
 import org.apache.spark.sql.types.{
   ArrayType,
@@ -751,45 +752,63 @@ class DataFrameSchemaNormalizer(jobName: String = "work_done",
     val df1_exploded = makeLowercaseAndUnify(
       unfoldNestedColumns(unfoldNestedColumns(oldDF.limit(1))))
     df1_exploded.createOrReplaceTempView("df1")
+    val df1_schema = spark.sql("""DESCRIBE df1 """).drop("comment")
+    val df1_schema_nested = df1_schema.filter(  col("col_name") contains STRUCT_SEP  )
+    val df1_schema_root = df1_schema.filter( ! ( col("col_name") contains STRUCT_SEP  ) )
 
     val df2_exploded = makeLowercaseAndUnify(
       unfoldNestedColumns(unfoldNestedColumns(newDF.limit(1))))
     df2_exploded.createOrReplaceTempView("df2")
+    val df2_schema = spark.sql("""DESCRIBE df2 """).drop("comment")
+    val df2_schema_nested = df2_schema.filter(  col("col_name") contains STRUCT_SEP  )
+    val df2_schema_root = df2_schema.filter( ! ( col("col_name") contains STRUCT_SEP  ) )
 
-    val df1AttrCount = spark.sql("""DESCRIBE df1 """).drop("comment").count
 
-    logger.info("old df schema:")
-    spark.sql("""DESCRIBE df1 """).show(200, false)
+
     logger.isDebugEnabled match {
       case true =>
-        spark.sql("""DESCRIBE df1 """).show(200, false)
+        logger.info("old df schema:")
+        df1_schema.show(200, false)
+
+        logger.info("new df schema:")
+        df2_schema.show(200, false)
       case _ =>
     }
 
-    logger.info("new df schema:")
-    spark.sql("""DESCRIBE df2 """).show(200, false)
-    logger.isDebugEnabled match {
-      case true =>
-        spark.sql("""DESCRIBE df2 """).show(200, false)
-      case _ =>
-    }
-
-    val newCount_leftOuter = spark
-      .sql("""DESCRIBE df1 """)
-      .drop("comment")
-      .join(spark.sql("""DESCRIBE df2 """).drop("comment"),
-            Seq("col_name", "data_type"),
-            "leftouter")
-      .count
-    val newCount_rightOuter = spark
-      .sql("""DESCRIBE df1 """)
-      .drop("comment")
-      .join(spark.sql("""DESCRIBE df2 """).drop("comment"),
-            Seq("col_name", "data_type"),
-            "rightouter")
+    //nested properties have to be exactly the same
+    val nested_schema_joined = df1_schema_nested
+      .join(df2_schema_nested, Seq("col_name", "data_type"))
       .count
 
-    !((df1AttrCount == newCount_leftOuter) & (newCount_leftOuter == newCount_rightOuter))
+
+    val nestedPorpertiesRequireRecalc = ! (df1_schema_nested.count == nested_schema_joined)
+
+    logger.info(s"nested properties need recalculation: $nestedPorpertiesRequireRecalc")
+
+
+    //root schema changes have to stay compatible // number types can be merged
+    val df1_schema_translated = df1_schema_root
+      .withColumnRenamed("data_type", "data_type_1")
+
+    val df2_schema_translated = df2_schema_root
+      .withColumnRenamed("data_type", "data_type_2")
+
+    val df1OJdf2Compatibility = df1_schema_translated.
+      join(df2_schema_translated, Seq("col_name"), "leftouter").
+      withColumn("compatible", (  col("data_type_1") === col("data_type_2")  ) or ( col("data_type_2").isNull ) ).
+      filter(!col("compatible")).
+      count
+
+    val df2OJdf1Compatibility = df2_schema_translated.
+      join(df1_schema_translated, Seq("col_name"), "leftouter").
+      withColumn("compatible", (  col("data_type_1") === col("data_type_2")  ) or ( col("data_type_1").isNull ) ).
+      filter(!col("compatible")).
+      count
+
+    val rootLevelChangesRequireRecalc = !(df1OJdf2Compatibility + df2OJdf1Compatibility == 0)
+    logger.info(s"root properties need recalculation: $rootLevelChangesRequireRecalc")
+
+    rootLevelChangesRequireRecalc | nestedPorpertiesRequireRecalc
 
   }
 }
